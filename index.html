@@ -61,6 +61,56 @@ const labels = puntos.map(d => d.label);
 const sPct   = puntos.map(d => d.spct);
 const kPct   = puntos.map(d => d.kpct);
 
+// Pinta el cuadro de datos para un indice dado. Reutilizado por el hover y por el estado inicial.
+function pintarTooltip(i) {
+  const tooltipEl = document.getElementById('chartTooltip');
+  if (i === undefined || i === null || i < 0 || !puntos[i]) return;
+  const s = sPct[i].toFixed(3);
+  const k = kPct[i].toFixed(3);
+  const diff = Math.abs(sPct[i] - kPct[i]).toFixed(3);
+  const actas = puntos[i].actas;
+  const sv = puntos[i].sv;
+  const kv = puntos[i].kv;
+  const diffV = Math.abs(sv - kv);
+  const fmtV = n => n.toLocaleString('es-PE');
+  const rawLabel = puntos[i].label || '';
+  const parts = rawLabel.split('\n');
+  const dia = (parts[0] || '').trim();
+  const hora = (parts[1] || '').trim();
+  tooltipEl.innerHTML =
+    '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">' +
+      '<span style="color:#e2e8f0;font-size:14px;font-weight:700">' + dia + '</span>' +
+      '<span style="color:#4ade80;font-size:18px;font-weight:800;letter-spacing:1px">' + hora + '</span>' +
+      '<span style="color:#64748b;font-size:11px;margin-left:4px">· Actas: ' + actas + '%</span>' +
+    '</div>' +
+    '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="width:12px;height:12px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;flex-shrink:0"></div>' +
+        '<div>' +
+          '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Sánchez</div>' +
+          '<div style="color:#4ade80;font-size:20px;font-weight:800;line-height:1.1">' + s + '<span style="font-size:13px">%</span></div>' +
+          '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(sv) + ' votos</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="width:12px;height:12px;border-radius:50%;background:#fb923c;box-shadow:0 0 8px #fb923c;flex-shrink:0"></div>' +
+        '<div>' +
+          '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Fujimori</div>' +
+          '<div style="color:#fb923c;font-size:20px;font-weight:800;line-height:1.1">' + k + '<span style="font-size:13px">%</span></div>' +
+          '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(kv) + ' votos</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:16px;border-left:1px solid rgba(255,255,255,0.1)">' +
+        '<div>' +
+          '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Brecha</div>' +
+          '<div style="color:#e2e8f0;font-size:20px;font-weight:800;line-height:1.1">' + diff + '<span style="font-size:13px">%</span></div>' +
+          '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(diffV) + ' votos</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  tooltipEl.style.opacity = '1';
+}
+
 const ctx = document.getElementById('myChart').getContext('2d');
 
 const grad = ctx.createLinearGradient(0, 0, 0, 500);
@@ -68,7 +118,7 @@ grad.addColorStop(0,   'rgba(34,197,94,0.40)');
 grad.addColorStop(0.5, 'rgba(250,204,21,0.15)');
 grad.addColorStop(1,   'rgba(249,115,22,0.40)');
 
-new Chart(ctx, {
+const chart = new Chart(ctx, {
   type: 'line',
   data: {
     labels,
@@ -130,55 +180,11 @@ new Chart(ctx, {
       tooltip: {
         enabled: false,
         external: function(context) {
-          const tooltipEl = document.getElementById('chartTooltip');
           const tooltip = context.tooltip;
-          if (tooltip.opacity === 0) { tooltipEl.style.opacity = '0'; return; }
-          const i = tooltip.dataPoints?.[0]?.dataIndex;
-          if (i === undefined) return;
-          const s = sPct[i].toFixed(3);
-          const k = kPct[i].toFixed(3);
-          const diff = Math.abs(sPct[i] - kPct[i]).toFixed(3);
-          const actas = puntos[i].actas;
-          const sv = puntos[i].sv;
-          const kv = puntos[i].kv;
-          const diffV = Math.abs(sv - kv);
-          const fmtV = n => n.toLocaleString('es-PE');
-          const rawLabel = puntos[i].label || '';
-          const parts = rawLabel.split('\n');
-          const dia = (parts[0] || '').trim();
-          const hora = (parts[1] || '').trim();
-          tooltipEl.innerHTML =
-            '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">' +
-              '<span style="color:#e2e8f0;font-size:14px;font-weight:700">' + dia + '</span>' +
-              '<span style="color:#4ade80;font-size:18px;font-weight:800;letter-spacing:1px">' + hora + '</span>' +
-              '<span style="color:#64748b;font-size:11px;margin-left:4px">· Actas: ' + actas + '%</span>' +
-            '</div>' +
-            '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">' +
-              '<div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:12px;height:12px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;flex-shrink:0"></div>' +
-                '<div>' +
-                  '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Sánchez</div>' +
-                  '<div style="color:#4ade80;font-size:20px;font-weight:800;line-height:1.1">' + s + '<span style="font-size:13px">%</span></div>' +
-                  '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(sv) + ' votos</div>' +
-                '</div>' +
-              '</div>' +
-              '<div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:12px;height:12px;border-radius:50%;background:#fb923c;box-shadow:0 0 8px #fb923c;flex-shrink:0"></div>' +
-                '<div>' +
-                  '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Fujimori</div>' +
-                  '<div style="color:#fb923c;font-size:20px;font-weight:800;line-height:1.1">' + k + '<span style="font-size:13px">%</span></div>' +
-                  '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(kv) + ' votos</div>' +
-                '</div>' +
-              '</div>' +
-              '<div style="display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:16px;border-left:1px solid rgba(255,255,255,0.1)">' +
-                '<div>' +
-                  '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Brecha</div>' +
-                  '<div style="color:#e2e8f0;font-size:20px;font-weight:800;line-height:1.1">' + diff + '<span style="font-size:13px">%</span></div>' +
-                  '<div style="color:#64748b;font-size:10px;margin-top:2px">' + fmtV(diffV) + ' votos</div>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
-          tooltipEl.style.opacity = '1';
+          let i = tooltip.dataPoints?.[0]?.dataIndex;
+          // Si el cursor sale del area (opacity 0) o no hay punto, volvemos al ultimo dato.
+          if (tooltip.opacity === 0 || i === undefined) i = puntos.length - 1;
+          pintarTooltip(i);
         }
       }
     },
@@ -213,6 +219,9 @@ new Chart(ctx, {
     }
   }
 });
+
+// Estado inicial: el cuadro arranca mostrando el ultimo dato (el mas reciente).
+pintarTooltip(puntos.length - 1);
 </script>
 </body>
 </html>
