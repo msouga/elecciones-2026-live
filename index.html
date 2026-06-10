@@ -16,6 +16,16 @@
   .line { width: 28px; height: 3px; border-radius: 2px; }
   .note { text-align: center; font-size: 0.7rem; color: #475569; margin-top: 12px; }
   .sources { text-align: center; font-size: 0.68rem; color: #334155; margin-top: 4px; }
+  .chart-wrap { position: relative; height: 460px; }
+  @media (max-width: 640px) {
+    body { padding: 12px; }
+    h1 { font-size: 1.02rem; }
+    h2 { font-size: 0.72rem; margin-bottom: 14px; line-height: 1.35; }
+    .chart-container { padding: 14px 8px 10px; border-radius: 10px; }
+    .chart-wrap { height: 64vh; min-height: 330px; }
+    .legend { gap: 14px; font-size: 0.74rem; flex-wrap: wrap; }
+    #chartTooltip { min-height: 0 !important; padding: 8px 10px !important; }
+  }
 </style>
 </head>
 <body>
@@ -35,7 +45,7 @@
     border:1px solid rgba(255,255,255,0.08);
     font-family:'Segoe UI',sans-serif;
   "></div>
-  <canvas id="myChart"></canvas>
+  <div class="chart-wrap"><canvas id="myChart"></canvas></div>
   <div class="legend">
     <div class="legend-item"><div class="line" style="background:#22c55e;"></div><span style="color:#22c55e">Sánchez — Juntos por el Perú</span></div>
     <div class="legend-item"><div class="line" style="background:#f97316;"></div><span style="color:#f97316">Fujimori — Fuerza Popular</span></div>
@@ -113,6 +123,7 @@ new Chart(ctx, {
   },
   options: {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
@@ -142,7 +153,7 @@ new Chart(ctx, {
               '<span style="color:#4ade80;font-size:18px;font-weight:800;letter-spacing:1px">' + hora + '</span>' +
               '<span style="color:#64748b;font-size:11px;margin-left:4px">· Actas: ' + actas + '%</span>' +
             '</div>' +
-            '<div style="display:flex;gap:24px">' +
+            '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">' +
               '<div style="display:flex;align-items:center;gap:8px">' +
                 '<div style="width:12px;height:12px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;flex-shrink:0"></div>' +
                 '<div>' +
