@@ -17,6 +17,8 @@
   .note { text-align: center; font-size: 0.7rem; color: #475569; margin-top: 12px; }
   .sources { text-align: center; font-size: 0.68rem; color: #334155; margin-top: 4px; }
   .chart-wrap { position: relative; height: 460px; }
+  /* Deslizar horizontal sobre el grafico recorre la curva sin mover la pagina; el scroll vertical sigue activo. */
+  #myChart { touch-action: pan-y; }
   @media (max-width: 640px) {
     body { padding: 12px; }
     h1 { font-size: 1.02rem; }
