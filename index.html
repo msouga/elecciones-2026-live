@@ -23,6 +23,11 @@
   .rango-btn { background: #1e293b; color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 7px 16px; font-size: 0.82rem; cursor: pointer; font-family: inherit; transition: all 0.12s; }
   .rango-btn:hover { border-color: rgba(255,255,255,0.3); }
   .rango-btn.activo { background: #22c55e; color: #0f172a; font-weight: 700; border-color: #22c55e; }
+  .nav { display: flex; justify-content: center; align-items: center; gap: 12px; max-width: 1200px; margin: -6px auto 14px; flex-wrap: wrap; }
+  .nav-btn { background: #1e293b; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; font-family: inherit; }
+  .nav-btn:hover:not(:disabled) { border-color: rgba(255,255,255,0.3); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+  .nav-label { color: #64748b; font-size: 0.74rem; min-width: 160px; text-align: center; }
   @media (max-width: 640px) {
     body { padding: 12px; }
     h1 { font-size: 1.02rem; }
@@ -45,6 +50,12 @@
   <button class="rango-btn" onclick="aplicarRango(24, this)">Últimas 24 h</button>
   <button class="rango-btn" onclick="aplicarRango(12, this)">Últimas 12 h</button>
   <button class="rango-btn" onclick="aplicarRango(6, this)">Últimas 6 h</button>
+</div>
+
+<div class="nav">
+  <button id="navPrev" class="nav-btn" onclick="desplazar(-1)">◀ Antes</button>
+  <span id="navLabel" class="nav-label">Ventana: todo el conteo</span>
+  <button id="navNext" class="nav-btn" onclick="desplazar(1)">Después ▶</button>
 </div>
 
 <div class="chart-container">
@@ -249,14 +260,23 @@ const chart = new Chart(ctx, {
   }
 });
 
-// Cambia el rango temporal visible. horas=null => todo el universo.
-function aplicarRango(horas, btn) {
-  const arr = (horas == null)
-    ? puntos
-    : puntos.filter((p, idx) => ts[idx] >= ahora - horas * 3600 * 1000);
+// Estado de la ventana temporal. ventanaH=null => todo. offsetH = horas desplazadas hacia el pasado desde el final.
+let ventanaH = null;
+let offsetH = 0;
+const rangoTotalH = () => ts.length ? (ahora - ts[0]) / 3600000 : 0;
+const maxOffsetH = () => ventanaH == null ? 0 : Math.max(0, rangoTotalH() - ventanaH);
+
+function render() {
+  let arr;
+  if (ventanaH == null) {
+    arr = puntos;
+  } else {
+    const fin = ahora - offsetH * 3600000;
+    const ini = fin - ventanaH * 3600000;
+    arr = puntos.filter((p, idx) => ts[idx] >= ini && ts[idx] <= fin);
+  }
   setVis(arr);
-  // Si el rango muy corto deja <2 puntos, el eje Y autoescala mejor con un poco de margen vertical.
-  if (horas != null && puntosVis.length) {
+  if (ventanaH != null && puntosVis.length) {
     // En zoom acercamos el eje Y al rango real de los datos visibles para que se note el detalle de la oscilacion.
     const vals = sVis.concat(kVis);
     const lo = Math.min(...vals), hi = Math.max(...vals);
@@ -273,12 +293,49 @@ function aplicarRango(horas, btn) {
   chart.data.datasets[2].data = puntosVis.map(() => 50);
   chart.update();
   pintarTooltip(puntosVis.length - 1);
+  actualizarNav();
+}
+
+function actualizarNav() {
+  const prev = document.getElementById('navPrev');
+  const next = document.getElementById('navNext');
+  const lab = document.getElementById('navLabel');
+  if (ventanaH == null) {
+    if (prev) prev.disabled = true;
+    if (next) next.disabled = true;
+    if (lab) lab.textContent = 'Ventana: todo el conteo';
+    return;
+  }
+  if (prev) prev.disabled = offsetH >= maxOffsetH() - 0.001;   // no hay mas pasado
+  if (next) next.disabled = offsetH <= 0.001;                   // ya estamos en el presente
+  if (lab && puntosVis.length) {
+    const a = (puntosVis[0].label || '').replace('\n', ' ');
+    const b = (puntosVis[puntosVis.length - 1].label || '').replace('\n', ' ');
+    lab.textContent = a + '  →  ' + b;
+  }
+}
+
+// Botones de rango: fijan el ancho de ventana y vuelven al presente.
+function aplicarRango(horas, btn) {
+  ventanaH = horas;
+  offsetH = 0;
+  render();
   document.querySelectorAll('.rango-btn').forEach(b => b.classList.remove('activo'));
   if (btn) btn.classList.add('activo');
 }
 
-// Estado inicial: el cuadro arranca mostrando el ultimo dato (el mas reciente).
+// Botones de navegacion: mueven la ventana media ventana hacia el pasado (dir<0) o el presente (dir>0).
+function desplazar(dir) {
+  if (ventanaH == null) return;
+  const paso = ventanaH / 2;
+  offsetH += (dir < 0 ? paso : -paso);
+  offsetH = Math.max(0, Math.min(offsetH, maxOffsetH()));
+  render();
+}
+
+// Estado inicial: el cuadro arranca mostrando el ultimo dato (el mas reciente) y los botones de nav desactivados (vista "Todo").
 pintarTooltip(puntosVis.length - 1);
+actualizarNav();
 </script>
 </body>
 </html>
